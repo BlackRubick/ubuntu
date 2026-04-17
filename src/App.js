@@ -1,24 +1,41 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import Dashboard from './pages/Dashboard';
+import PatientsPage from './pages/PatientsPage';
+import MedicalRecordPage from './pages/MedicalRecordPage';
+import NuevaConsultaPage from './pages/NuevaConsultaPage';
+import LabPanel from './pages/LabPanel';
+import ResultsPanel from './pages/ResultsPanel';
+import ImportExportPage from './pages/ImportExportPage';
+
+import UsersPage from './pages/UsersPage';
+import NotFound from './pages/NotFound';
+import ProtectedRoute from './components/ProtectedRoute';
+import SidebarLayout from './layouts/SidebarLayout';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<SidebarLayout />}>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/patients" element={<PatientsPage />} />
+            <Route path="/patients/:id" element={<MedicalRecordPage />} />
+            <Route path="/patients/:id/lab" element={<LabPanel />} />
+            <Route path="/lab" element={<LabPanel />} />
+            <Route path="/results" element={<ResultsPanel />} />
+            <Route path="/import-export" element={<ImportExportPage />} />
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="/consultas/nueva" element={<NuevaConsultaPage />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
   );
 }
 
