@@ -86,9 +86,16 @@ const PatientsPage = () => {
   // 🔹 Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validar duplicado por NSS antes de enviar
+    const nssExists = (data || []).some(
+      (p) => p.nss && form.nss && p.nss.trim() === form.nss.trim()
+    );
+    if (nssExists) {
+      showToast('Ya existe un paciente con ese NSS', 'error');
+      return;
+    }
     try {
       setSubmitting(true);
-      // Enviar solo el objeto form, no { data: form }
       await postApi.request(form);
       showToast('Paciente creado correctamente', 'success');
       setShowForm(false);
@@ -154,43 +161,45 @@ const PatientsPage = () => {
 
       {/* 🧾 Modal */}
       <Modal open={showForm} onClose={() => setShowForm(false)}>
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"
-        >
-          <FormField label="NSS (Número de Seguro Social)" name="nss" value={form.nss} onChange={handleChange} required />
-          <FormField label="Nombre(s)" name="nombres" value={form.nombres} onChange={handleChange} required />
-          <FormField label="Primer apellido" name="primer_apellido" value={form.primer_apellido} onChange={handleChange} required />
-          <FormField label="Segundo apellido" name="segundo_apellido" value={form.segundo_apellido} onChange={handleChange} />
-          <FormField label="Sexo" name="sexo" value={form.sexo} onChange={handleChange} required />
-          <FormField label="CURP" name="curp" value={form.curp} onChange={handleChange} />
-          <FormField label="Fecha de nacimiento" name="fecha_nacimiento" type="date" value={form.fecha_nacimiento} onChange={handleChange} required />
-          <FormField label="Nacionalidad" name="nacionalidad" value={form.nacionalidad} onChange={handleChange} />
-          <FormField label="Estado nacimiento" name="estado_nacimiento" value={form.estado_nacimiento} onChange={handleChange} />
-          <FormField label="Estado residencia" name="estado_residencia" value={form.estado_residencia} onChange={handleChange} />
-          <FormField label="Municipio residencia" name="municipio_residencia" value={form.municipio_residencia} onChange={handleChange} />
-          <FormField label="Localidad/Barrio" name="localidad_residencia" value={form.localidad_residencia} onChange={handleChange} />
-          <FormField label="Estado civil" name="estado_civil" value={form.estado_civil} onChange={handleChange} />
-          <FormField label="Domicilio" name="domicilio" value={form.domicilio} onChange={handleChange} />
-          <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} />
+        <div className="w-full max-w-lg mx-auto bg-white rounded-lg shadow-lg p-4 md:p-6 overflow-y-auto max-h-[90vh]">
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            <FormField label="NSS (Número de Seguro Social)" name="nss" value={form.nss} onChange={handleChange} required />
+            <FormField label="Nombre(s)" name="nombres" value={form.nombres} onChange={handleChange} required />
+            <FormField label="Primer apellido" name="primer_apellido" value={form.primer_apellido} onChange={handleChange} required />
+            <FormField label="Segundo apellido" name="segundo_apellido" value={form.segundo_apellido} onChange={handleChange} />
+            <FormField label="Sexo" name="sexo" value={form.sexo} onChange={handleChange} required />
+            <FormField label="CURP" name="curp" value={form.curp} onChange={handleChange} />
+            <FormField label="Fecha de nacimiento" name="fecha_nacimiento" type="date" value={form.fecha_nacimiento} onChange={handleChange} required />
+            <FormField label="Nacionalidad" name="nacionalidad" value={form.nacionalidad} onChange={handleChange} />
+            <FormField label="Estado nacimiento" name="estado_nacimiento" value={form.estado_nacimiento} onChange={handleChange} />
+            <FormField label="Estado residencia" name="estado_residencia" value={form.estado_residencia} onChange={handleChange} />
+            <FormField label="Municipio residencia" name="municipio_residencia" value={form.municipio_residencia} onChange={handleChange} />
+            <FormField label="Localidad/Barrio" name="localidad_residencia" value={form.localidad_residencia} onChange={handleChange} />
+            <FormField label="Estado civil" name="estado_civil" value={form.estado_civil} onChange={handleChange} />
+            <FormField label="Domicilio" name="domicilio" value={form.domicilio} onChange={handleChange} />
+            <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} />
 
-          <div className="col-span-2 flex justify-end gap-2 mt-4">
-            <button
-              type="button"
-              className="bg-gray-300 px-4 py-2 rounded"
-              onClick={() => setShowForm(false)}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-700 text-white px-4 py-2 rounded"
-              disabled={submitting}
-            >
-              {submitting ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
-        </form>
+            <div className="col-span-1 sm:col-span-2 flex justify-end gap-2 mt-4">
+              <button
+                type="button"
+                className="bg-gray-300 px-4 py-2 rounded"
+                onClick={() => setShowForm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-700 text-white px-4 py-2 rounded"
+                disabled={submitting}
+              >
+                {submitting ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
 
       {/* 🔔 Toast */}

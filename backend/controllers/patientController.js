@@ -8,9 +8,8 @@ exports.createPatient = async (req, res, next) => {
       return res.status(400).json({ message: 'El NSS ya está registrado para otro paciente.' });
     }
     const patient = await Patient.create(req.body);
-    // Crear expediente clínico automáticamente
-    const medicalRecord = await MedicalRecord.create({ patientId: patient.id });
-    res.status(201).json({ patient, medicalRecord });
+    // Ya NO se crea expediente clínico automáticamente
+    res.status(201).json({ patient });
   } catch (err) {
     next(err);
   }

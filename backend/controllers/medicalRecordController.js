@@ -7,18 +7,17 @@ exports.exportMedicalRecord = async (req, res, next) => {
     if (!record) return res.status(404).json({ message: 'Expediente no encontrado' });
     const patient = record.Patient;
     let content = '';
-    content += `Nombre: ${patient.name}\n`;
-    content += `Edad: ${patient.age}\n`;
-    content += `Sexo: ${patient.sex}\n`;
-    content += `Dirección: ${patient.address}\n`;
-    content += `Teléfono: ${patient.phone}\n`;
-    content += `NSS: ${patient.nss}\n`;
-    content += `Estado civil: ${patient.marital_status}\n`;
-    content += `Fecha de ingreso: ${patient.admission_date ? patient.admission_date.toISOString().split('T')[0] : ''}\n`;
-    content += `Motivo de consulta: ${record.reason}\n`;
-    content += `Diagnóstico: ${record.diagnosis}\n`;
-    content += `Tratamiento: ${record.treatment}\n`;
-    content += `Notas: ${record.notes || ''}\n`;
+    content += `Nombre: ${patient.nombres || ''} ${patient.primer_apellido || ''} ${patient.segundo_apellido || ''}\n`;
+    content += `Sexo: ${patient.sexo || ''}\n`;
+    content += `Dirección: ${patient.domicilio || ''}\n`;
+    content += `Teléfono: ${patient.telefono || ''}\n`;
+    content += `NSS: ${patient.nss || ''}\n`;
+    content += `Estado civil: ${patient.estado_civil || ''}\n`;
+    content += `Fecha de nacimiento: ${patient.fecha_nacimiento ? (typeof patient.fecha_nacimiento === 'string' ? patient.fecha_nacimiento.split('T')[0] : patient.fecha_nacimiento.toISOString().split('T')[0]) : ''}\n`;
+    content += `Motivo de consulta: ${record.motivo_consulta || ''}\n`;
+    content += `Diagnóstico: ${record.diagnostico || ''}\n`;
+    content += `Tratamiento: ${record.tratamiento || ''}\n`;
+    content += `Notas: ${record.notas_clinicas || ''}\n`;
 
     // Opcional: nombre de archivo personalizado
     const filename = `expediente_${patient.name.replace(/\s+/g, '_')}_${patient.id}.txt`;
@@ -33,8 +32,8 @@ const { MedicalRecord, Patient } = require('../models');
 
 exports.createMedicalRecord = async (req, res, next) => {
   try {
-    const { patientId, reason, diagnosis, treatment, notes } = req.body;
-    const record = await MedicalRecord.create({ patientId, reason, diagnosis, treatment, notes });
+    const { patientId, motivo_consulta, diagnostico, tratamiento, notas_clinicas } = req.body;
+    const record = await MedicalRecord.create({ patientId, motivo_consulta, diagnostico, tratamiento, notas_clinicas });
     res.status(201).json(record);
   } catch (err) {
     next(err);
