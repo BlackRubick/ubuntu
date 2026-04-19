@@ -65,10 +65,23 @@ exports.exportLabResult = async (req, res, next) => {
     });
     if (!result) return res.status(404).json({ message: 'Resultado no encontrado' });
     const lab = result.LabRequest;
+    if (!lab) return res.status(404).json({ message: 'Solicitud de laboratorio no encontrada para este resultado' });
     const record = lab.MedicalRecord;
+    if (!record) return res.status(404).json({ message: 'Expediente clínico no encontrado para esta solicitud de laboratorio' });
     const p = record.Patient;
+    if (!p) return res.status(404).json({ message: 'Paciente no encontrado para este expediente clínico' });
     const nombreCompleto = `${p.nombres || ''} ${p.primer_apellido || ''} ${p.segundo_apellido || ''}`.trim();
-    let txt = `Paciente: ${nombreCompleto}\nSexo: ${p.sexo || ''}\nCURP: ${p.curp || ''}\nFecha de nacimiento: ${p.fecha_nacimiento ? p.fecha_nacimiento.toISOString().split('T')[0] : ''}\n`;
+    let fechaNacimiento = '';
+    if (p.fecha_nacimiento) {
+      if (typeof p.fecha_nacimiento === 'string') {
+        fechaNacimiento = p.fecha_nacimiento.split('T')[0];
+      } else if (p.fecha_nacimiento instanceof Date) {
+        fechaNacimiento = p.fecha_nacimiento.toISOString().split('T')[0];
+      } else {
+        fechaNacimiento = String(p.fecha_nacimiento);
+      }
+    }
+    let txt = `Paciente: ${nombreCompleto}\nSexo: ${p.sexo || ''}\nCURP: ${p.curp || ''}\nFecha de nacimiento: ${fechaNacimiento}\n`;
     txt += `\n--- Resultado de Laboratorio ---\n`;
     txt += `Tipo: ${lab.type || ''}\nEstado: ${lab.status || ''}\nResultado: ${result.result || ''}\n`;
     res.setHeader('Content-Disposition', `attachment; filename=labresult_${nombreCompleto.replace(/ /g, '_')}_${lab.type || ''}.txt`);

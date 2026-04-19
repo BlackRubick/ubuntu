@@ -27,6 +27,7 @@ const LabPanel = () => {
   const putStatusApi = useApi('/lab', 'put');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
+    patientId: '',
     medicalRecordId: urlMedicalRecordId || '',
     type: '',
     objetivo_tratamiento: '',
@@ -92,10 +93,31 @@ const LabPanel = () => {
     }
     setSubmitting(true);
     try {
-      await postLabApi.request(form);
+      let medicalRecordId = form.medicalRecordId;
+      // Si no hay medicalRecordId, buscarlo o crearlo
+      if (!medicalRecordId && form.patientId) {
+        // Buscar si el paciente ya tiene expedientes
+        const paciente = Array.isArray(patientsApi.data) ? patientsApi.data.find(p => p.id == form.patientId) : null;
+        if (paciente && paciente.MedicalRecords && paciente.MedicalRecords.length > 0) {
+          medicalRecordId = paciente.MedicalRecords[0].id;
+        } else {
+          // Crear expediente clínico vacío
+          const res = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({ patientId: form.patientId, motivo_consulta: '', diagnostico: '', tratamiento: '', notas_clinicas: '' }),
+          });
+          const data = await res.json();
+          medicalRecordId = data.id;
+        }
+      }
+      await postLabApi.request({ ...form, medicalRecordId });
       showToast('Solicitud creada', 'success');
       setShowForm(false);
-      setForm({ medicalRecordId: '', type: '', objetivo_tratamiento: '', riesgos_tratamiento: '', consentimiento_informado: '' });
+      setForm({ patientId: '', medicalRecordId: '', type: '', objetivo_tratamiento: '', riesgos_tratamiento: '', consentimiento_informado: '' });
       setConsentChecked(false);
       fetchRequests();
     } catch {
@@ -127,18 +149,19 @@ const LabPanel = () => {
             <div>
               <label className="block text-gray-700 mb-1">Paciente</label>
               <select
-                name="medicalRecordId"
+                name="patientId"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none shadow-sm transition-all bg-white"
-                value={form.medicalRecordId}
-                onChange={handleChange}
+                value={form.patientId || ''}
+                onChange={e => {
+                  setForm(f => ({ ...f, patientId: e.target.value, medicalRecordId: '' }));
+                }}
                 required
                 disabled={patientsApi.loading}
               >
                 <option value="">Selecciona un paciente...</option>
                 {Array.isArray(patientsApi.data) && patientsApi.data
-                  .filter((p) => p.MedicalRecord)
                   .map((p) => (
-                    <option key={p.MedicalRecord.id} value={p.MedicalRecord.id}>
+                    <option key={p.id} value={p.id}>
                       {`${p.nombres || ''} ${p.primer_apellido || ''} ${p.segundo_apellido || ''}`.trim()}
                     </option>
                   ))}
