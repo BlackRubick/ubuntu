@@ -74,10 +74,42 @@ exports.addNote = async (req, res, next) => {
   try {
     const record = await MedicalRecord.findByPk(req.params.id);
     if (!record) return res.status(404).json({ message: 'Expediente no encontrado' });
-    record.notas_clinicas = (record.notas_clinicas || '') + '\n' + req.body.note;
+    // El frontend envía { nota: ... }
+    record.notas_clinicas = (record.notas_clinicas || '') + '\n' + req.body.nota;
     await record.save();
     res.json(record);
   } catch (err) {
     next(err);
   }
 };
+
+exports.getMedicalRecordByPatient = async (req, res, next) => {
+  try {
+    let record = await MedicalRecord.findOne({
+      where: { patientId: req.params.patientId },
+      include: Patient
+    });
+
+    // 🔥 SI NO EXISTE → CREARLO AUTOMÁTICAMENTE
+    if (!record) {
+      record = await MedicalRecord.create({
+        patientId: req.params.patientId,
+        motivo_consulta: '',
+        diagnostico: '',
+        tratamiento: '',
+        notas_clinicas: '',
+      });
+
+      // volver a traerlo con include
+      record = await MedicalRecord.findByPk(record.id, {
+        include: Patient
+      });
+    }
+
+    res.json(record);
+  } catch (err) {
+    next(err);
+  }
+};
+
+

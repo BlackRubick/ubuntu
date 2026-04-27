@@ -1,4 +1,3 @@
--- Hospital UP Chiapas - Base de datos del sistema de gestión hospitalaria (versión extendida)
 
 CREATE DATABASE IF NOT EXISTS telesalud3;
 USE telesalud3;
@@ -70,7 +69,6 @@ CREATE TABLE lab_results (
   FOREIGN KEY (labRequestId) REFERENCES lab_requests(id)
 );
 
--- Usuarios de ejemplo para Hospital UP Chiapas
 INSERT INTO users (username, password, role, name, email, createdAt, updatedAt) VALUES
 ('admin',    '$2b$10$HZL4IM5bMLD0lrg1qI299OHyYfV.zjO2Od1GlkVWq5m2Uk8gfpQ8a', 'ADMIN',      'Administrador', 'admin@demo.com',    NOW(), NOW()),
 ('director', '$2b$10$zOm.eyBDK0MPz/ezKtJe/erJTKGCKisW04uGGroIyUe.m8v/wazyC', 'DIRECTOR',    'Director',      'director@demo.com', NOW(), NOW()),

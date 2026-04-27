@@ -12,7 +12,7 @@ import ImportExportPage from './pages/ImportExportPage';
 import UsersPage from './pages/UsersPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
-import SidebarLayout from './layouts/SidebarLayout';
+import NavbarLayout from './layouts/NavbarLayout';
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route element={<SidebarLayout />}>
+          <Route element={<NavbarLayout />}>
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/patients" element={<PatientsPage />} />

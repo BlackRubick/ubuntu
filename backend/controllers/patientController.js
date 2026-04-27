@@ -28,7 +28,9 @@ exports.getPatients = async (req, res, next) => {
 
 exports.getPatient = async (req, res, next) => {
   try {
-    const patient = await Patient.findByPk(req.params.id);
+    const patient = await Patient.findByPk(req.params.id, {
+      include: [{ model: MedicalRecord }]
+    });
     if (!patient) return res.status(404).json({ message: 'Paciente no encontrado' });
     res.json(patient);
   } catch (err) {

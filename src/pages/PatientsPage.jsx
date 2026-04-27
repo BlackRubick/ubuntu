@@ -1,55 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Routes, Route } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import useToast from '../hooks/useToast';
-import Table from '../components/Table';
-import FormField from '../components/FormField';
-import Card from '../components/Card';
 import Modal from '../components/Modal';
+import FormField from '../components/FormField';
 import RoleGuard from '../components/RoleGuard';
 import useAuthStore from '../store/useAuthStore';
-
-const columns = [
-  { key: 'nombre_completo', label: 'Nombre completo' },
-  { key: 'sexo', label: 'Sexo' },
-  { key: 'curp', label: 'CURP' },
-  { key: 'fecha_nacimiento', label: 'Fecha de nacimiento' },
-  { key: 'telefono', label: 'Teléfono' },
-  { key: 'estado_civil', label: 'Estado civil' },
-  { key: 'domicilio', label: 'Domicilio' },
-  { key: 'actions', label: '' },
-];
-
+import api from '../services/api';
 const initialForm = {
-  nss: '',
-  nombres: '',
-  primer_apellido: '',
-  segundo_apellido: '',
-  sexo: '',
-  curp: '',
-  fecha_nacimiento: '',
-  nacionalidad: '',
-  estado_nacimiento: '',
-  estado_residencia: '',
-  municipio_residencia: '',
-  localidad_residencia: '',
-  estado_civil: '',
-  domicilio: '',
-  telefono: '',
+  nss: '', nombres: '', primer_apellido: '', segundo_apellido: '',
+  sexo: '', curp: '', fecha_nacimiento: '', nacionalidad: '',
+  estado_nacimiento: '', estado_residencia: '', municipio_residencia: '',
+  localidad_residencia: '', estado_civil: '', domicilio: '', telefono: '',
 };
+
+const getInitials = (p) => {
+  const n = p.nombres?.[0] || '';
+  const a = p.primer_apellido?.[0] || '';
+  return (n + a).toUpperCase() || '?';
+};
+
+const AVATAR_COLORS = [
+  { bg: '#E6F1FB', text: '#0C447C' },
+  { bg: '#E1F5EE', text: '#085041' },
+  { bg: '#EEEDFE', text: '#3C3489' },
+  { bg: '#FBEAF0', text: '#72243E' },
+];
 
 const PatientsPage = () => {
   const { data, loading, error, request } = useApi('/patients', 'get');
-
-  // Log para depuración de datos recibidos
-  useEffect(() => {
-    if (data) {
-      console.log('Pacientes recibidos:', data);
-    }
-  }, [data]);
   const postApi = useApi('/patients', 'post');
+
+  useEffect(() => {
+    if (data) console.log('Pacientes recibidos:', data);
+  }, [data]);
 
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -60,40 +46,22 @@ const PatientsPage = () => {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
-  // 🔹 Obtener pacientes
   const fetchPatients = async (q = '') => {
     await request({ params: q ? { q } : {} });
   };
 
-  useEffect(() => {
-    fetchPatients();
-  }, []);
+  useEffect(() => { fetchPatients(); }, []);
 
-  // 🔹 Buscar
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchPatients(search);
-  };
+  const handleSearch = (e) => { e.preventDefault(); fetchPatients(search); };
 
-  // 🔹 Manejar inputs
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // 🔹 Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validar duplicado por NSS antes de enviar
     const nssExists = (data || []).some(
       (p) => p.nss && form.nss && p.nss.trim() === form.nss.trim()
     );
-    if (nssExists) {
-      showToast('Ya existe un paciente con ese NSS', 'error');
-      return;
-    }
+    if (nssExists) { showToast('Ya existe un paciente con ese NSS', 'error'); return; }
     try {
       setSubmitting(true);
       await postApi.request(form);
@@ -101,121 +69,263 @@ const PatientsPage = () => {
       setShowForm(false);
       setForm(initialForm);
       fetchPatients();
-    } catch (err) {
+    } catch {
       showToast('Error al crear paciente', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const patients = data || [];
+
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 text-blue-700">Pacientes</h2>
+    <div className="p-6 min-h-screen bg-gray-50">
 
-      {/* 🔍 Buscador + botón */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Buscar por nombre..."
-            className="px-3 py-2 border rounded"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
-            Buscar
-          </button>
-        </form>
-
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl font-medium text-gray-900">Pacientes</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Gestión y registro de pacientes del sistema</p>
+        </div>
         <RoleGuard roles={['ADMIN', 'MEDICO']}>
           <button
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-[#E6F1FB] transition active:scale-[0.98]"
+            style={{ background: '#0C447C' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#185FA5'}
+            onMouseLeave={e => e.currentTarget.style.background = '#0C447C'}
           >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M7 2v10M2 7h10" />
+            </svg>
             Nuevo paciente
           </button>
         </RoleGuard>
       </div>
 
-      {/* 📋 Tabla */}
-      {loading && <LoadingSpinner />}
-      {error && <div className="text-red-600 mb-4">{error}</div>}
-
-      <Card>
-        <Table
-          columns={columns}
-          data={(data || []).map((p) => ({
-            ...p,
-            nombre_completo: `${p.nombres || ''} ${p.primer_apellido || ''} ${p.segundo_apellido || ''}`.trim(),
-            actions: (
-              <button
-                className="text-blue-700 underline"
-                onClick={() => navigate(`/patients/${p.id}`)}
-              >
-                Ver
-              </button>
-            ),
-          }))}
-        />
-      </Card>
-
-      {/* 🧾 Modal */}
-      <Modal open={showForm} onClose={() => setShowForm(false)}>
-        <div className="w-full max-w-lg mx-auto bg-white rounded-lg shadow-lg p-4 md:p-6 overflow-y-auto max-h-[90vh]">
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <form onSubmit={handleSearch} className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden flex-1 min-w-[200px] max-w-sm">
+          <span className="px-2.5 text-gray-400 flex items-center">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <circle cx="6" cy="6" r="4" /><path d="M10 10l2.5 2.5" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre o CURP..."
+            className="flex-1 h-9 bg-transparent text-sm text-gray-900 outline-none"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="h-9 px-3 text-xs font-medium text-[#E6F1FB]"
+            style={{ background: '#0C447C' }}
           >
-            <FormField label="NSS (Número de Seguro Social)" name="nss" value={form.nss} onChange={handleChange} required />
-            <FormField label="Nombre(s)" name="nombres" value={form.nombres} onChange={handleChange} required />
-            <FormField label="Primer apellido" name="primer_apellido" value={form.primer_apellido} onChange={handleChange} required />
-            <FormField label="Segundo apellido" name="segundo_apellido" value={form.segundo_apellido} onChange={handleChange} />
-            <FormField label="Sexo" name="sexo" value={form.sexo} onChange={handleChange} required />
-            <FormField label="CURP" name="curp" value={form.curp} onChange={handleChange} />
-            <FormField label="Fecha de nacimiento" name="fecha_nacimiento" type="date" value={form.fecha_nacimiento} onChange={handleChange} required />
-            <FormField label="Nacionalidad" name="nacionalidad" value={form.nacionalidad} onChange={handleChange} />
-            <FormField label="Estado nacimiento" name="estado_nacimiento" value={form.estado_nacimiento} onChange={handleChange} />
-            <FormField label="Estado residencia" name="estado_residencia" value={form.estado_residencia} onChange={handleChange} />
-            <FormField label="Municipio residencia" name="municipio_residencia" value={form.municipio_residencia} onChange={handleChange} />
-            <FormField label="Localidad/Barrio" name="localidad_residencia" value={form.localidad_residencia} onChange={handleChange} />
-            <FormField label="Estado civil" name="estado_civil" value={form.estado_civil} onChange={handleChange} />
-            <FormField label="Domicilio" name="domicilio" value={form.domicilio} onChange={handleChange} />
-            <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} />
+            Buscar
+          </button>
+        </form>
+        {!loading && (
+          <span className="text-xs text-gray-400 ml-auto">
+            {patients.length} {patients.length === 1 ? 'paciente' : 'pacientes'}
+          </span>
+        )}
+      </div>
 
-            <div className="col-span-1 sm:col-span-2 flex justify-end gap-2 mt-4">
+      {/* States */}
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
+          <LoadingSpinner /> Cargando pacientes...
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-red-600 text-sm mb-4">{error}</div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-gray-100">
+              {['Paciente', 'Sexo', 'CURP', 'Fecha nac.', 'Teléfono', 'Estado civil', ''].map(h => (
+                <th key={h} className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-400 tracking-wide whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {patients.length === 0 && !loading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-gray-400">
+                  No hay pacientes registrados
+                </td>
+              </tr>
+            ) : patients.map((p, i) => {
+              const colors = AVATAR_COLORS[i % AVATAR_COLORS.length];
+              const nombre = `${p.nombres || ''} ${p.primer_apellido || ''} ${p.segundo_apellido || ''}`.trim();
+              return (
+                <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0"
+                        style={{ background: colors.bg, color: colors.text }}
+                      >
+                        {getInitials(p)}
+                      </div>
+                      <span className="text-gray-900">{nombre}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium"
+                      style={p.sexo?.toLowerCase().startsWith('f')
+                        ? { background: '#FBEAF0', color: '#72243E' }
+                        : { background: '#E6F1FB', color: '#0C447C' }}
+                    >
+                      {p.sexo || '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{p.curp || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{p.fecha_nacimiento || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{p.telefono || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{p.estado_civil || '—'}</td>
+                  <td className="px-4 py-3">
+                    <button
+onClick={async () => {
+  try {
+    let expediente = (p.MedicalRecords || []).find(r => r.patientId === p.id);
+
+    if (!expediente) {
+      showToast('Creando expediente...', 'info');
+
+      await api.post('/medical-records', {
+        patientId: p.id,
+        motivo_consulta: '',
+        diagnostico: '',
+        tratamiento: '',
+        notas_clinicas: '',
+      });
+
+      showToast('Expediente creado', 'success');
+    }
+
+    // 🔥 SIEMPRE IR A LA MISMA RUTA
+    navigate(`/patients/${p.id}`);
+
+  } catch (err) {
+    console.error(err);
+    showToast('Error al crear expediente', 'error');
+  }
+}}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border border-[#B5D4F4] text-[#185FA5] hover:bg-[#E6F1FB] transition-colors"
+                    >
+                      Ver
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M2 6h8M6 2l4 4-4 4" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal */}
+      <Modal open={showForm} onClose={() => setShowForm(false)}>
+        <div className="w-full max-w-lg mx-auto bg-white rounded-xl border border-gray-100 overflow-hidden">
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div>
+              <h2 className="text-sm font-medium text-gray-900">Registrar nuevo paciente</h2>
+              <p className="text-[11px] text-gray-400 mt-0.5">Completa los campos requeridos</p>
+            </div>
+            <button
+              onClick={() => setShowForm(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M4 4l8 8M12 4l-8 8" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Modal body */}
+          <form onSubmit={handleSubmit}>
+            <div className="px-5 py-4 grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+              {[
+                { label: 'NSS', name: 'nss', required: true },
+                { label: 'Nombre(s)', name: 'nombres', required: true },
+                { label: 'Primer apellido', name: 'primer_apellido', required: true },
+                { label: 'Segundo apellido', name: 'segundo_apellido' },
+                { label: 'Sexo', name: 'sexo', required: true },
+                { label: 'Fecha de nacimiento', name: 'fecha_nacimiento', type: 'date', required: true },
+                { label: 'CURP', name: 'curp' },
+                { label: 'Teléfono', name: 'telefono' },
+                { label: 'Estado civil', name: 'estado_civil' },
+                { label: 'Nacionalidad', name: 'nacionalidad' },
+                { label: 'Estado de nacimiento', name: 'estado_nacimiento' },
+                { label: 'Estado de residencia', name: 'estado_residencia' },
+                { label: 'Municipio', name: 'municipio_residencia' },
+                { label: 'Localidad / Barrio', name: 'localidad_residencia' },
+              ].map(({ label, name, type, required }) => (
+                <div key={name}>
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                    {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+                  </label>
+                  <input
+                    type={type || 'text'}
+                    name={name}
+                    value={form[name]}
+                    onChange={handleChange}
+                    required={required}
+                    className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition"
+                  />
+                </div>
+              ))}
+              <div className="col-span-2">
+                <label className="block text-[11px] font-medium text-gray-500 mb-1">Domicilio completo</label>
+                <input
+                  type="text"
+                  name="domicilio"
+                  value={form.domicilio}
+                  onChange={handleChange}
+                  placeholder="Calle, número, colonia..."
+                  className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition"
+                />
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
               <button
                 type="button"
-                className="bg-gray-300 px-4 py-2 rounded"
                 onClick={() => setShowForm(false)}
+                className="h-8 px-4 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="bg-blue-700 text-white px-4 py-2 rounded"
                 disabled={submitting}
+                className="h-8 px-4 text-sm font-medium text-[#E6F1FB] rounded-lg disabled:opacity-50 transition"
+                style={{ background: '#0C447C' }}
               >
-                {submitting ? 'Guardando...' : 'Guardar'}
+                {submitting ? 'Guardando...' : 'Guardar paciente'}
               </button>
             </div>
           </form>
         </div>
       </Modal>
 
-      {/* 🔔 Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </div>
   );
 };
 
-
-// Exportación por defecto para la lista de pacientes
 export default PatientsPage;
-// Exportación nombrada para el detalle
 export { default as PatientDetailPage } from './PatientDetailPage';
