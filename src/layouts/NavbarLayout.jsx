@@ -109,49 +109,65 @@ const NavbarLayout = () => {
         </div>
         {/* Menú hamburguesa (móvil) */}
         {menuOpen && (
-          <div className="sm:hidden fixed inset-0 z-50 bg-black/30" onClick={() => setMenuOpen(false)}>
+          <div className="sm:hidden fixed inset-0 z-50 flex" onClick={() => setMenuOpen(false)}>
+            {/* Fondo oscuro */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
+            {/* Drawer */}
             <div
-              className="absolute left-0 top-0 w-64 h-full bg-white shadow-lg flex flex-col p-4 gap-2 animate-slide-in"
+              className="relative w-11/12 max-w-xs h-full bg-white shadow-2xl flex flex-col px-6 py-6 gap-4 animate-slide-in rounded-r-2xl"
               onClick={e => e.stopPropagation()}
             >
+              {/* Botón cerrar fijo */}
               <button
-                className="self-end mb-2 p-2 rounded-md hover:bg-gray-100"
+                className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 shadow"
                 onClick={() => setMenuOpen(false)}
                 aria-label="Cerrar menú"
               >
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" y1="4" x2="16" y2="16" />
-                  <line x1="16" y1="4" x2="4" y2="16" />
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="4" x2="20" y2="20" />
+                  <line x1="20" y1="4" x2="4" y2="20" />
                 </svg>
               </button>
-              {filteredLinks.map(link => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className={({ isActive }) =>
-                    `block px-3 py-2 rounded-lg text-base font-medium whitespace-nowrap transition-all
-                    ${isActive
-                      ? 'bg-[#E6F1FB] text-[#0C447C]'
-                      : 'text-gray-700 hover:bg-gray-100'}`
-                  }
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-              <div className="mt-4 border-t pt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-700">
+              {/* Brand */}
+              <div className="flex items-center gap-3 mb-2 mt-2">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-base font-bold" style={{ background: '#0C447C' }}>H</div>
+                <div>
+                  <div className="text-base font-semibold text-gray-900">MaxPau</div>
+                  <div className="text-xs text-gray-400 -mt-0.5">TeleSalud</div>
+                </div>
+              </div>
+              {/* Links */}
+              <nav className="flex flex-col gap-2 mt-2">
+                {filteredLinks.map(link => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    className={({ isActive }) =>
+                      `block px-4 py-2 rounded-xl text-base font-medium transition-all tracking-wide
+                      ${isActive
+                        ? 'bg-[#E6F1FB] text-[#0C447C] shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100'}`
+                    }
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
+              </nav>
+              {/* Usuario y salir */}
+              <div className="mt-auto pt-6 border-t border-gray-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
                     {getInitials(user?.name)}
                   </div>
                   <div>
-                    <div className="text-xs font-medium text-gray-900">{user?.name || 'Usuario'}</div>
-                    <div className="text-[10px] text-gray-400">{role}</div>
+                    <div className="text-sm font-medium text-gray-900">{user?.name || 'Usuario'}</div>
+                    <div className="text-xs text-gray-400">{role}</div>
                   </div>
                 </div>
                 <button
                   onClick={() => { setMenuOpen(false); useAuthStore.getState().logout(); }}
-                  className="w-full h-8 px-3 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
+                  className="w-full h-10 px-3 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-100 transition font-medium"
                 >
                   Salir
                 </button>
