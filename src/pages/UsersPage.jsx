@@ -41,9 +41,58 @@ const UsersPage = () => {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => { /* MISMA LOGICA */ };
-  const handleEdit = (u) => { /* MISMA LOGICA */ };
-  const handleDelete = async (id) => { /* MISMA LOGICA */ };
+  // Crear o editar usuario
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      if (editing) {
+        // Editar usuario
+        await putApi.request(form, `/users/${editing.id}`);
+        showToast('Usuario actualizado', 'success');
+      } else {
+        // Crear usuario
+        await postApi.request(form);
+        showToast('Usuario creado', 'success');
+      }
+      setShowForm(false);
+      setEditing(null);
+      setForm({ username: '', name: '', email: '', role: 'MEDICO', password: '' });
+      fetchUsers();
+    } catch (err) {
+      showToast('Error al guardar usuario', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Editar usuario (abrir modal con datos)
+  const handleEdit = (u) => {
+    setEditing(u);
+    setForm({
+      username: u.username || '',
+      name: u.name || '',
+      email: u.email || '',
+      role: u.role || 'MEDICO',
+      password: '', // No mostrar la contraseña
+    });
+    setShowForm(true);
+  };
+
+  // Eliminar usuario
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este usuario?')) return;
+    setSubmitting(true);
+    try {
+      await deleteApi.request(null, `/users/${id}`);
+      showToast('Usuario eliminado', 'success');
+      fetchUsers();
+    } catch (err) {
+      showToast('Error al eliminar usuario', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
