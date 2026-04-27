@@ -41,17 +41,14 @@ const UsersPage = () => {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Crear o editar usuario
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       if (editing) {
-        // Editar usuario
         await putApi.request(form, `/users/${editing.id}`);
         showToast('Usuario actualizado', 'success');
       } else {
-        // Crear usuario
         await postApi.request(form);
         showToast('Usuario creado', 'success');
       }
@@ -66,7 +63,6 @@ const UsersPage = () => {
     }
   };
 
-  // Editar usuario (abrir modal con datos)
   const handleEdit = (u) => {
     setEditing(u);
     setForm({
@@ -74,12 +70,11 @@ const UsersPage = () => {
       name: u.name || '',
       email: u.email || '',
       role: u.role || 'MEDICO',
-      password: '', // No mostrar la contraseña
+      password: '',
     });
     setShowForm(true);
   };
 
-  // Eliminar usuario
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar este usuario?')) return;
     setSubmitting(true);
@@ -95,10 +90,12 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    // ← menos padding en móvil
+    <div className="px-3 py-4 sm:p-6 min-h-screen bg-gray-50">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
+      {/* ← apila verticalmente en móvil, botón full-width */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-medium text-gray-900">Usuarios</h1>
           <p className="text-sm text-gray-400">Gestión de cuentas del sistema</p>
@@ -110,7 +107,7 @@ const UsersPage = () => {
             setEditing(null);
             setForm({ username: '', name: '', email: '', role: 'MEDICO', password: '' });
           }}
-          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-[#E6F1FB]"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-[#E6F1FB]"
           style={{ background: '#0C447C' }}
         >
           + Nuevo usuario
@@ -130,8 +127,8 @@ const UsersPage = () => {
         </div>
       )}
 
-      {/* TABLE */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+      {/* ── VISTA DESKTOP: tabla ── */}
+      <div className="hidden sm:block bg-white border border-gray-100 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
@@ -145,13 +142,11 @@ const UsersPage = () => {
           <tbody>
             {data && data.length > 0 ? data.map(u => {
               const roleStyle = roleStyles[u.role] || roleStyles.MEDICO;
-
               return (
                 <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900">{u.username}</td>
                   <td className="px-4 py-3">{u.name}</td>
                   <td className="px-4 py-3 text-gray-600">{u.email}</td>
-
                   <td className="px-4 py-3">
                     <span
                       className="px-2 py-0.5 rounded-full text-[11px] font-medium"
@@ -160,20 +155,12 @@ const UsersPage = () => {
                       {u.role}
                     </span>
                   </td>
-
                   <td className="px-4 py-3 flex gap-3 text-sm">
-                    <button
-                      onClick={() => handleEdit(u)}
-                      className="text-[#0C447C] hover:underline"
-                    >
+                    <button onClick={() => handleEdit(u)} className="text-[#0C447C] hover:underline">
                       Editar
                     </button>
-
                     {u.id !== user.id && (
-                      <button
-                        onClick={() => handleDelete(u.id)}
-                        className="text-red-500 hover:underline"
-                      >
+                      <button onClick={() => handleDelete(u.id)} className="text-red-500 hover:underline">
                         Eliminar
                       </button>
                     )}
@@ -191,23 +178,67 @@ const UsersPage = () => {
         </table>
       </div>
 
+      {/* ── VISTA MÓVIL: cards ── */}
+      <div className="sm:hidden bg-white border border-gray-100 rounded-xl overflow-hidden divide-y divide-gray-50">
+        {data && data.length > 0 ? data.map(u => {
+          const roleStyle = roleStyles[u.role] || roleStyles.MEDICO;
+          return (
+            <div key={u.id} className="px-4 py-3 flex flex-col gap-2">
+              {/* Fila 1: username + rol */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-900">{u.username}</span>
+                <span
+                  className="px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  style={{ background: roleStyle.bg, color: roleStyle.color }}
+                >
+                  {u.role}
+                </span>
+              </div>
+              {/* Fila 2: nombre */}
+              <div className="text-sm text-gray-700">{u.name}</div>
+              {/* Fila 3: email */}
+              <div className="text-xs text-gray-400">{u.email}</div>
+              {/* Fila 4: acciones */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => handleEdit(u)}
+                  className="text-xs font-medium text-[#0C447C] border border-[#85B7EB] bg-[#E6F1FB] px-3 py-1 rounded-md"
+                >
+                  Editar
+                </button>
+                {u.id !== user.id && (
+                  <button
+                    onClick={() => handleDelete(u.id)}
+                    className="text-xs font-medium text-red-500 border border-red-200 bg-red-50 px-3 py-1 rounded-md"
+                  >
+                    Eliminar
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        }) : (
+          <p className="text-center py-10 text-gray-400 text-sm">No hay usuarios registrados</p>
+        )}
+      </div>
+
       {/* MODAL */}
       <Modal open={showForm} onClose={() => setShowForm(false)}>
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden w-full max-w-xl">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden w-full sm:max-w-xl">
 
           {/* Header */}
-          <div className="px-5 py-4 border-b border-gray-100">
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-medium text-gray-900">
               {editing ? 'Editar usuario' : 'Nuevo usuario'}
             </h2>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
-
-              <FormField label="Usuario" name="username" value={form.username} onChange={handleChange} required />
-              <FormField label="Nombre" name="name" value={form.name} onChange={handleChange} required />
-              <FormField label="Email" name="email" value={form.email} onChange={handleChange} required type="email" />
+            {/* ← 1 col en móvil, 2 cols en md */}
+            <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+              <FormField label="Usuario"     name="username" value={form.username} onChange={handleChange} required />
+              <FormField label="Nombre"      name="name"     value={form.name}     onChange={handleChange} required />
+              <FormField label="Email"       name="email"    value={form.email}    onChange={handleChange} required type="email" />
 
               <div>
                 <label className="text-[11px] text-gray-500 mb-1 block">Rol</label>
@@ -222,10 +253,9 @@ const UsersPage = () => {
               </div>
 
               <FormField label="Contraseña" name="password" value={form.password} onChange={handleChange} required type="password" />
-
             </div>
 
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
+            <div className="flex justify-end gap-2 px-4 sm:px-5 py-3 border-t border-gray-100">
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
@@ -233,7 +263,6 @@ const UsersPage = () => {
               >
                 Cancelar
               </button>
-
               <button
                 type="submit"
                 disabled={submitting}

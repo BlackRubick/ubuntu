@@ -12,7 +12,7 @@ import RoleGuard from '../components/RoleGuard';
 ───────────────────────────────────────────── */
 const S = {
   page: {
-    padding: '2rem 1.5rem',
+    padding: '1rem',
     minHeight: '100vh',
     background: '#f8f7f5',
     fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -39,6 +39,7 @@ const S = {
   btnNew: {
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '7px',
     height: '36px',
     padding: '0 16px',
@@ -52,6 +53,7 @@ const S = {
     transition: 'background .15s',
     fontFamily: 'inherit',
     flexShrink: 0,
+    width: '100%',   // móvil: full width; se sobreescribe en sm via mediaQuery inline workaround (ver className abajo)
   },
   /* tabla */
   tableWrap: {
@@ -292,7 +294,15 @@ const ResultsPanel = () => {
   const [form, setForm] = useState({ labRequestId: '', result: '', file: null });
   const [submitting, setSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [isWide, setIsWide] = useState(() => window.innerWidth >= 640);
   const { toast, showToast, closeToast } = useToast();
+
+  // Detectar ancho para alternar tabla/cards
+  useEffect(() => {
+    const onResize = () => setIsWide(window.innerWidth >= 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const fetchResults = async () => { await request(); };
 
@@ -356,17 +366,21 @@ const ResultsPanel = () => {
   });
 
   return (
-    <div style={S.page}>
+    <div style={{ ...S.page, padding: isWide ? '2rem 1.5rem' : '1rem 0.75rem' }}>
 
       {/* Header */}
-      <div style={S.header}>
+      <div style={{
+        ...S.header,
+        flexDirection: isWide ? 'row' : 'column',
+        alignItems: isWide ? 'flex-start' : 'stretch',
+      }}>
         <div>
           <h1 style={S.title}>Panel de resultados</h1>
           <p style={S.subtitle}>Resultados de estudios clínicos de laboratorio</p>
         </div>
         <RoleGuard roles={['LABORATORIO']}>
           <button
-            style={S.btnNew}
+            style={{ ...S.btnNew, width: isWide ? 'auto' : '100%' }}
             onClick={() => setShowForm(true)}
             onMouseEnter={e => e.currentTarget.style.background = '#185FA5'}
             onMouseLeave={e => e.currentTarget.style.background = '#0C447C'}
@@ -385,56 +399,105 @@ const ResultsPanel = () => {
       )}
       {error && <div style={S.errorMsg}>{error}</div>}
 
-      {/* Tabla */}
-      <div style={S.tableWrap}>
-        <table style={S.table}>
-          <thead style={S.thead}>
-            <tr>
-              {['ID', 'Paciente', 'Solicitud', 'Resultado', 'Archivo'].map(h => (
-                <th key={h} style={S.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !loading ? (
+      {/* ── VISTA DESKTOP: tabla ── */}
+      {isWide ? (
+        <div style={S.tableWrap}>
+          <table style={S.table}>
+            <thead style={S.thead}>
               <tr>
-                <td colSpan={5} style={S.emptyState}>
-                  No hay resultados registrados
-                </td>
+                {['ID', 'Paciente', 'Solicitud', 'Resultado', 'Archivo'].map(h => (
+                  <th key={h} style={S.th}>{h}</th>
+                ))}
               </tr>
-            ) : rows.map((r, i) => (
-              <tr key={r.id} style={S.tr(i)}>
-                <td style={S.tdMuted}>#{r.id}</td>
-                <td style={S.td}>{r.patientName}</td>
-                <td style={S.td}>
-                  <span style={S.pillType}>
-                    {r.LabRequest?.type || `#${r.labRequestId}`}
-                  </span>
-                </td>
-                <td style={{ ...S.td, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.result || '—'}
-                </td>
-                <td style={S.td}>
-                  {r.file ? (
-                    <a
-                      href={`http://localhost:4000${r.file}`}
-                      style={S.downloadLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <IconDownloadSm /> Descargar
-                    </a>
-                  ) : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan={5} style={S.emptyState}>
+                    No hay resultados registrados
+                  </td>
+                </tr>
+              ) : rows.map((r, i) => (
+                <tr key={r.id} style={S.tr(i)}>
+                  <td style={S.tdMuted}>#{r.id}</td>
+                  <td style={S.td}>{r.patientName}</td>
+                  <td style={S.td}>
+                    <span style={S.pillType}>
+                      {r.LabRequest?.type || `#${r.labRequestId}`}
+                    </span>
+                  </td>
+                  <td style={{ ...S.td, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {r.result || '—'}
+                  </td>
+                  <td style={S.td}>
+                    {r.file ? (
+                      <a
+                        href={`http://localhost:4000${r.file}`}
+                        style={S.downloadLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <IconDownloadSm /> Descargar
+                      </a>
+                    ) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        /* ── VISTA MÓVIL: cards ── */
+        <div style={{ ...S.tableWrap, borderRadius: '12px' }}>
+          {rows.length === 0 && !loading ? (
+            <p style={S.emptyState}>No hay resultados registrados</p>
+          ) : rows.map((r, i) => (
+            <div
+              key={r.id}
+              style={{
+                padding: '12px 14px',
+                borderBottom: i < rows.length - 1 ? '0.5px solid #f1efe8' : 'none',
+                background: i % 2 === 0 ? '#fff' : 'transparent',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              {/* Fila 1: ID + solicitud pill */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#888780' }}>#{r.id}</span>
+                <span style={S.pillType}>{r.LabRequest?.type || `#${r.labRequestId}`}</span>
+              </div>
+              {/* Fila 2: nombre paciente */}
+              <div style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a18' }}>{r.patientName}</div>
+              {/* Fila 3: resultado (texto truncado con expansión visual) */}
+              {r.result && (
+                <div style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: '1.4' }}>
+                  {r.result}
+                </div>
+              )}
+              {/* Fila 4: archivo */}
+              {r.file && (
+                <div>
+                  <a
+                    href={`http://localhost:4000${r.file}`}
+                    style={S.downloadLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <IconDownloadSm /> Descargar archivo
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal */}
       <Modal open={showForm} onClose={() => setShowForm(false)}>
-        <div style={S.modalInner}>
+        {/* ← en móvil ocupa todo el ancho disponible */}
+        <div style={{ ...S.modalInner, width: '100%', margin: isWide ? undefined : '0 0.5rem' }}>
 
           {/* Cabecera modal */}
           <div style={S.modalHead}>
@@ -449,7 +512,8 @@ const ResultsPanel = () => {
 
           {/* Cuerpo modal */}
           <form onSubmit={handleSubmit}>
-            <div style={S.modalBody}>
+            {/* max-height para que no se salga de pantalla en móvil */}
+            <div style={{ ...S.modalBody, maxHeight: '60vh', overflowY: 'auto' }}>
 
               {/* Solicitud */}
               <div>
