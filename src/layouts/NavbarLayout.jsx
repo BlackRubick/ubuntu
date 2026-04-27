@@ -1,6 +1,6 @@
+import react from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
-import react from 'react';
 const NavbarLayout = () => {
   const user = useAuthStore((s) => s.user);
   const role = user?.role;
