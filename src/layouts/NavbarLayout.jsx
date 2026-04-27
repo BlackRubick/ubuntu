@@ -109,10 +109,10 @@ const NavbarLayout = () => {
         </div>
         {/* Menú hamburguesa (móvil) */}
         {menuOpen && (
-          <div className="sm:hidden fixed inset-0 z-50 flex" onClick={() => setMenuOpen(false)}>
-            {/* Drawer con fondo sólido que cubre todo */}
+          <div className="sm:hidden fixed inset-0 z-50" onClick={() => setMenuOpen(false)}>
+            {/* Drawer cubre 100% pantalla, fondo blanco sólido */}
             <div
-              className="relative w-full h-full bg-white shadow-2xl flex flex-col px-6 py-6 gap-4 animate-slide-in"
+              className="absolute inset-0 w-full h-full bg-white flex flex-col px-6 py-6 gap-4 animate-slide-in overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
               {/* Botón cerrar fijo */}
