@@ -38,9 +38,13 @@ const PatientsPage = () => {
   }, [data]);
 
   const [search, setSearch] = useState('');
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const putApi = useApi('/patients', 'put');
+  const deleteApi = useApi('/patients', 'delete');
 
   const { toast, showToast, closeToast } = useToast();
   const user = useAuthStore((s) => s.user);
@@ -56,8 +60,42 @@ const PatientsPage = () => {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+
+  const handleEdit = (p) => {
+    setEditing(p);
+    setForm({ ...p });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este paciente?')) return;
+    try {
+      await deleteApi.request(null, `/patients/${id}`);
+      showToast('Paciente eliminado', 'success');
+      fetchPatients();
+    } catch {
+      showToast('Error al eliminar paciente', 'error');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (editing) {
+      try {
+        setSubmitting(true);
+        await putApi.request(form, `/patients/${editing.id}`);
+        showToast('Paciente actualizado', 'success');
+        setShowForm(false);
+        setForm(initialForm);
+        setEditing(null);
+        fetchPatients();
+      } catch {
+        showToast('Error al actualizar paciente', 'error');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     const nssExists = (data || []).some(
       (p) => p.nss && form.nss && p.nss.trim() === form.nss.trim()
     );
@@ -192,34 +230,28 @@ const PatientsPage = () => {
                   <td className="px-4 py-3 text-xs text-gray-500">{p.fecha_nacimiento || '—'}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{p.telefono || '—'}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{p.estado_civil || '—'}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 flex gap-2">
                     <button
-onClick={async () => {
-  try {
-    let expediente = (p.MedicalRecords || []).find(r => r.patientId === p.id);
-
-    if (!expediente) {
-      showToast('Creando expediente...', 'info');
-
-      await api.post('/medical-records', {
-        patientId: p.id,
-        motivo_consulta: '',
-        diagnostico: '',
-        tratamiento: '',
-        notas_clinicas: '',
-      });
-
-      showToast('Expediente creado', 'success');
-    }
-
-    // 🔥 SIEMPRE IR A LA MISMA RUTA
-    navigate(`/patients/${p.id}`);
-
-  } catch (err) {
-    console.error(err);
-    showToast('Error al crear expediente', 'error');
-  }
-}}
+                      onClick={async () => {
+                        try {
+                          let expediente = (p.MedicalRecords || []).find(r => r.patientId === p.id);
+                          if (!expediente) {
+                            showToast('Creando expediente...', 'info');
+                            await api.post('/medical-records', {
+                              patientId: p.id,
+                              motivo_consulta: '',
+                              diagnostico: '',
+                              tratamiento: '',
+                              notas_clinicas: '',
+                            });
+                            showToast('Expediente creado', 'success');
+                          }
+                          navigate(`/patients/${p.id}`);
+                        } catch (err) {
+                          console.error(err);
+                          showToast('Error al crear expediente', 'error');
+                        }
+                      }}
                       className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border border-[#B5D4F4] text-[#185FA5] hover:bg-[#E6F1FB] transition-colors"
                     >
                       Ver
@@ -227,6 +259,23 @@ onClick={async () => {
                         <path d="M2 6h8M6 2l4 4-4 4" />
                       </svg>
                     </button>
+                    {/* Solo ADMIN y MEDICO pueden editar/borrar */}
+                    {(user?.role === 'ADMIN' || user?.role === 'MEDICO') && (
+                      <>
+                        <button
+                          onClick={() => handleEdit(p)}
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          className="text-red-500 hover:underline text-xs"
+                        >
+                          Eliminar
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               );
@@ -236,16 +285,16 @@ onClick={async () => {
       </div>
 
       {/* Modal */}
-      <Modal open={showForm} onClose={() => setShowForm(false)}>
+      <Modal open={showForm} onClose={() => { setShowForm(false); setEditing(null); }}>
         <div className="w-full max-w-lg mx-auto bg-white rounded-xl border border-gray-100 overflow-hidden">
           {/* Modal header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div>
-              <h2 className="text-sm font-medium text-gray-900">Registrar nuevo paciente</h2>
+              <h2 className="text-sm font-medium text-gray-900">{editing ? 'Editar paciente' : 'Registrar nuevo paciente'}</h2>
               <p className="text-[11px] text-gray-400 mt-0.5">Completa los campos requeridos</p>
             </div>
             <button
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setEditing(null); }}
               className="text-gray-400 hover:text-gray-600 transition-colors p-1"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -284,6 +333,7 @@ onClick={async () => {
                     onChange={handleChange}
                     required={required}
                     className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition"
+                    disabled={editing && name === 'nss'}
                   />
                 </div>
               ))}
@@ -304,7 +354,7 @@ onClick={async () => {
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setEditing(null); }}
                 className="h-8 px-4 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
               >
                 Cancelar
@@ -315,7 +365,7 @@ onClick={async () => {
                 className="h-8 px-4 text-sm font-medium text-[#E6F1FB] rounded-lg disabled:opacity-50 transition"
                 style={{ background: '#0C447C' }}
               >
-                {submitting ? 'Guardando...' : 'Guardar paciente'}
+                {submitting ? 'Guardando...' : (editing ? 'Actualizar paciente' : 'Guardar paciente')}
               </button>
             </div>
           </form>
