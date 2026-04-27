@@ -108,14 +108,15 @@ const LabResult = sequelize.define('LabResult', {
 });
 
 
+
 // Associations
 Patient.hasMany(MedicalRecord, { foreignKey: 'patientId', onDelete: 'CASCADE', hooks: true });
 MedicalRecord.belongsTo(Patient, { foreignKey: 'patientId' });
 
-MedicalRecord.hasMany(LabRequest, { foreignKey: 'medicalRecordId' });
+MedicalRecord.hasMany(LabRequest, { foreignKey: 'medicalRecordId', onDelete: 'CASCADE', hooks: true });
 LabRequest.belongsTo(MedicalRecord, { foreignKey: 'medicalRecordId' });
 
-LabRequest.hasOne(LabResult, { foreignKey: 'labRequestId' });
+LabRequest.hasOne(LabResult, { foreignKey: 'labRequestId', onDelete: 'CASCADE', hooks: true });
 LabResult.belongsTo(LabRequest, { foreignKey: 'labRequestId' });
 
 module.exports = {
