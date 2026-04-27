@@ -48,10 +48,12 @@ const NuevaConsultaPage = () => {
   }));
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    // ← menos padding en móvil
+    <div className="px-3 py-4 sm:p-6 min-h-screen bg-gray-50">
 
       {/* HEADER */}
-      <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
+      {/* ← apila en móvil, botón full-width */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-6">
         <div>
           <h1 className="text-xl font-medium text-gray-900">Consultas</h1>
           <p className="text-sm text-gray-400">Registro y seguimiento clínico</p>
@@ -59,7 +61,7 @@ const NuevaConsultaPage = () => {
 
         <button
           onClick={() => setShowForm(true)}
-          className="h-9 px-4 rounded-lg text-sm font-medium text-[#E6F1FB]"
+          className="w-full sm:w-auto h-9 px-4 rounded-lg text-sm font-medium text-[#E6F1FB]"
           style={{ background: '#0C447C' }}
         >
           + Nueva consulta
@@ -78,9 +80,8 @@ const NuevaConsultaPage = () => {
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-
+      {/* ── VISTA DESKTOP: tabla ── */}
+      <div className="hidden sm:block bg-white border border-gray-100 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
@@ -91,7 +92,6 @@ const NuevaConsultaPage = () => {
               ))}
             </tr>
           </thead>
-
           <tbody>
             {loadingConsultas ? (
               <tr>
@@ -115,28 +115,62 @@ const NuevaConsultaPage = () => {
             ))}
           </tbody>
         </table>
+        {errorConsultas && <div className="p-4 text-red-500 text-sm">{errorConsultas}</div>}
+      </div>
 
-        {errorConsultas && (
-          <div className="p-4 text-red-500 text-sm">{errorConsultas}</div>
-        )}
+      {/* ── VISTA MÓVIL: cards ── */}
+      <div className="sm:hidden bg-white border border-gray-100 rounded-xl overflow-hidden divide-y divide-gray-50">
+        {loadingConsultas ? (
+          <div className="p-6 text-center text-gray-400 flex items-center justify-center gap-2">
+            <LoadingSpinner /> Cargando...
+          </div>
+        ) : consultasTable.length === 0 ? (
+          <p className="p-10 text-center text-gray-400 text-sm">No hay consultas registradas</p>
+        ) : consultasTable.map((c) => (
+          <div key={c.id} className="px-4 py-3 flex flex-col gap-1.5">
+            {/* Nombre paciente */}
+            <div className="text-sm font-medium text-gray-900">{c.paciente}</div>
+            {/* Motivo */}
+            {c.motivo_consulta && (
+              <div className="text-xs text-gray-500">
+                <span className="font-medium text-gray-400">Motivo: </span>{c.motivo_consulta}
+              </div>
+            )}
+            {/* Diagnóstico */}
+            {c.diagnostico && (
+              <div className="text-xs text-gray-500">
+                <span className="font-medium text-gray-400">Diagnóstico: </span>{c.diagnostico}
+              </div>
+            )}
+            {/* Tratamiento */}
+            {c.tratamiento && (
+              <div className="text-xs text-gray-500">
+                <span className="font-medium text-gray-400">Tratamiento: </span>{c.tratamiento}
+              </div>
+            )}
+          </div>
+        ))}
+        {errorConsultas && <div className="p-4 text-red-500 text-sm">{errorConsultas}</div>}
       </div>
 
       {/* MODAL */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-3">
 
-          <div className="bg-white rounded-xl border border-gray-100 w-full max-w-xl overflow-hidden">
+          {/* ← w-full en móvil, max-w-xl en sm+ */}
+          <div className="bg-white rounded-xl border border-gray-100 w-full sm:max-w-xl overflow-hidden">
 
             {/* Header */}
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
               <h2 className="text-sm font-medium text-gray-900">Nueva consulta</h2>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* ← max-height + scroll para que no se salga en móvil */}
+              <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
 
                 {/* Paciente */}
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <label className="text-[11px] text-gray-500 mb-1 block">Paciente</label>
                   <select
                     name="patientId"
@@ -154,15 +188,15 @@ const NuevaConsultaPage = () => {
                   </select>
                 </div>
 
-                <FormField label="Motivo consulta" name="motivo_consulta" value={form.motivo_consulta} onChange={handleChange} required />
-                <FormField label="Diagnóstico" name="diagnostico" value={form.diagnostico} onChange={handleChange} required />
-                <FormField label="Tratamiento" name="tratamiento" value={form.tratamiento} onChange={handleChange} required />
-                <FormField label="Notas clínicas" name="notas_clinicas" value={form.notas_clinicas} onChange={handleChange} />
+                <FormField label="Motivo consulta"  name="motivo_consulta" value={form.motivo_consulta} onChange={handleChange} required />
+                <FormField label="Diagnóstico"      name="diagnostico"     value={form.diagnostico}     onChange={handleChange} required />
+                <FormField label="Tratamiento"      name="tratamiento"     value={form.tratamiento}     onChange={handleChange} required />
+                <FormField label="Notas clínicas"   name="notas_clinicas"  value={form.notas_clinicas}  onChange={handleChange} />
 
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
+              <div className="flex justify-end gap-2 px-4 sm:px-5 py-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
@@ -170,7 +204,6 @@ const NuevaConsultaPage = () => {
                 >
                   Cancelar
                 </button>
-
                 <button
                   type="submit"
                   disabled={submitting}
@@ -181,12 +214,11 @@ const NuevaConsultaPage = () => {
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
 
-      {loadingPacientes && <div className="mt-4 text-sm text-gray-400"><LoadingSpinner /> Cargando pacientes...</div>}
+      {loadingPacientes && <div className="mt-4 text-sm text-gray-400 flex items-center gap-2"><LoadingSpinner /> Cargando pacientes...</div>}
       {errorPacientes && <div className="text-red-500 mt-4 text-sm">{errorPacientes}</div>}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
