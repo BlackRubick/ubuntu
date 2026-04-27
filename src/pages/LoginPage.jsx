@@ -193,7 +193,7 @@ const LoginPage = () => {
           </div>
 
           <p className="text-center text-gray-300 mt-6" style={{ fontSize: 11 }}>
-            &copy; {new Date().getFullYear()} Hospital Moderno · TeleSalud
+            &copy; {new Date().getFullYear()} Hospital MaxPau· TeleSalud
           </p>
         </div>
       </div>

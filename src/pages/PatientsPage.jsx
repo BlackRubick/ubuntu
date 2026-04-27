@@ -117,10 +117,10 @@ const PatientsPage = () => {
   const patients = data || [];
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    <div className="p-2 sm:p-6 min-h-screen bg-gray-50">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-medium text-gray-900">Pacientes</h1>
           <p className="text-sm text-gray-400 mt-0.5">Gestión y registro de pacientes del sistema</p>
@@ -142,8 +142,8 @@ const PatientsPage = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <form onSubmit={handleSearch} className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden flex-1 min-w-[200px] max-w-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4 flex-wrap">
+        <form onSubmit={handleSearch} className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden flex-1 min-w-[150px] max-w-full sm:max-w-sm mb-2 sm:mb-0">
           <span className="px-2.5 text-gray-400 flex items-center">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="6" cy="6" r="4" /><path d="M10 10l2.5 2.5" />
@@ -182,8 +182,8 @@ const PatientsPage = () => {
       )}
 
       {/* Table */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <table className="w-full border-collapse text-sm">
+      <div className="bg-white border border-gray-100 rounded-xl overflow-x-auto">
+        <table className="w-full min-w-[700px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-100">
               {['Paciente', 'Sexo', 'CURP', 'Fecha nac.', 'Teléfono', 'Estado civil', ''].map(h => (
@@ -286,7 +286,7 @@ const PatientsPage = () => {
 
       {/* Modal */}
       <Modal open={showForm} onClose={() => { setShowForm(false); setEditing(null); }}>
-        <div className="w-full max-w-lg mx-auto bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="w-full max-w-lg mx-auto bg-white rounded-xl border border-gray-100 overflow-hidden p-0 sm:p-0">
           {/* Modal header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div>
@@ -305,7 +305,7 @@ const PatientsPage = () => {
 
           {/* Modal body */}
           <form onSubmit={handleSubmit}>
-            <div className="px-5 py-4 grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+            <div className="px-3 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
               {[
                 { label: 'NSS', name: 'nss', required: true },
                 { label: 'Nombre(s)', name: 'nombres', required: true },
@@ -337,7 +337,7 @@ const PatientsPage = () => {
                   />
                 </div>
               ))}
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <label className="block text-[11px] font-medium text-gray-500 mb-1">Domicilio completo</label>
                 <input
                   type="text"
@@ -351,7 +351,7 @@ const PatientsPage = () => {
             </div>
 
             {/* Modal footer */}
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 px-3 sm:px-5 py-3 border-t border-gray-100">
               <button
                 type="button"
                 onClick={() => { setShowForm(false); setEditing(null); }}
