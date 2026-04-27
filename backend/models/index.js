@@ -109,7 +109,7 @@ const LabResult = sequelize.define('LabResult', {
 
 
 // Associations
-Patient.hasMany(MedicalRecord, { foreignKey: 'patientId' });
+Patient.hasMany(MedicalRecord, { foreignKey: 'patientId', onDelete: 'CASCADE', hooks: true });
 MedicalRecord.belongsTo(Patient, { foreignKey: 'patientId' });
 
 MedicalRecord.hasMany(LabRequest, { foreignKey: 'medicalRecordId' });
