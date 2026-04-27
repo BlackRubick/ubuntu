@@ -2,6 +2,40 @@ const PDFDocument = require('pdfkit');
 const { MedicalRecord, Patient, LabRequest, LabResult } = require('../models');
 const path = require('path');
 
+// ─── Parsea el campo result (puede ser JSON array o string plano) ───
+const parseResult = (raw) => {
+  if (!raw) return 'Pendiente';
+
+  // Intenta parsear como JSON
+  try {
+    const parsed = JSON.parse(raw);
+
+    // Array de objetos con { name, value, units?, ref?, ... }
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => {
+          const name  = item.name  || item.code || '';
+          const value = item.value !== undefined ? item.value : '';
+          const units = item.units ? ` ${item.units}` : '';
+          const ref   = item.ref   ? ` (ref: ${item.ref})`  : '';
+          return `${name}: ${value}${units}${ref}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    // Objeto simple { result: '...' }
+    if (typeof parsed === 'object' && parsed !== null) {
+      return parsed.result || parsed.value || JSON.stringify(parsed);
+    }
+
+    return String(parsed);
+  } catch {
+    // No es JSON — devuelve el string original limpio
+    return String(raw).trim();
+  }
+};
+
 exports.exportMedicalRecordPdf = async (req, res, next) => {
   try {
     const record = await MedicalRecord.findByPk(req.params.id, {
@@ -40,7 +74,7 @@ exports.exportMedicalRecordPdf = async (req, res, next) => {
     doc.pipe(res);
 
     // =====================
-    // 🎨 HEADER PRO
+    // 🎨 HEADER
     // =====================
     try {
       doc.image(path.join(__dirname, '../../public/logo.png'), 40, 35, { width: 50 });
@@ -58,7 +92,6 @@ exports.exportMedicalRecordPdf = async (req, res, next) => {
       .fillColor('#555')
       .text('Expediente Clínico Digital', 100, 60);
 
-    // línea separadora
     doc
       .moveTo(40, 85)
       .lineTo(555, 85)
@@ -73,39 +106,19 @@ exports.exportMedicalRecordPdf = async (req, res, next) => {
     // =====================
 
     const section = (title) => {
-      doc
-        .rect(40, y, 515, 22)
-        .fill('#e6f0fa');
-
-      doc
-        .fillColor('#0C447C')
-        .font('Helvetica-Bold')
-        .fontSize(11)
-        .text(title, 45, y + 6);
-
+      doc.rect(40, y, 515, 22).fill('#e6f0fa');
+      doc.fillColor('#0C447C').font('Helvetica-Bold').fontSize(11).text(title, 45, y + 6);
       y += 30;
     };
 
     const field = (label, value) => {
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor('#111')
-        .text(`${label}: `, 45, y, { continued: true });
-
-      doc
-        .font('Helvetica')
-        .fillColor('#444')
-        .text(value || '—');
-
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#111').text(`${label}: `, 45, y, { continued: true });
+      doc.font('Helvetica').fillColor('#444').text(value || '—');
       y += 15;
     };
 
     const card = (height = 10) => {
-      doc
-        .rect(40, y - 5, 515, height)
-        .strokeColor('#e5e7eb')
-        .stroke();
+      doc.rect(40, y - 5, 515, height).strokeColor('#e5e7eb').stroke();
     };
 
     // =====================
@@ -131,7 +144,6 @@ exports.exportMedicalRecordPdf = async (req, res, next) => {
     field('Teléfono', p.telefono);
 
     card(y - startY + 10);
-
     y += 10;
 
     // =====================
@@ -151,74 +163,71 @@ exports.exportMedicalRecordPdf = async (req, res, next) => {
     doc.font('Helvetica-Bold').text('Notas clínicas:', 45, y);
     y += 14;
 
-    doc
-      .font('Helvetica')
-      .fillColor('#333')
-      .text(record.notas_clinicas || 'Sin notas', {
-        width: 500,
-        align: 'left'
-      });
+    doc.font('Helvetica').fillColor('#333').text(record.notas_clinicas || 'Sin notas', { width: 500, align: 'left' });
 
     y = doc.y + 10;
 
     card(y - startY2 + 10);
-
     y += 10;
 
     // =====================
-    // 🧪 LABS (TABLA PRO)
+    // 🧪 LABS — tabla con filas de altura dinámica
     // =====================
     section('3. Resultados de laboratorio');
 
     const colX = [40, 220, 350];
-    const colW = [180, 130, 205];
+    const colW = [175, 125, 205];
+    const ROW_PAD = 6; // padding vertical dentro de cada celda
 
-    const header = ['Tipo', 'Fecha', 'Resultado'];
-
-    // header tabla
-    header.forEach((h, i) => {
-      doc
-        .rect(colX[i], y, colW[i], 20)
-        .fill('#0C447C');
-
-      doc
-        .fillColor('#fff')
-        .fontSize(9)
-        .text(h, colX[i] + 5, y + 6);
+    // ── Cabecera de tabla ──
+    ['Tipo', 'Fecha', 'Resultado'].forEach((h, i) => {
+      doc.rect(colX[i], y, colW[i], 20).fill('#0C447C');
+      doc.fillColor('#fff').font('Helvetica-Bold').fontSize(9).text(h, colX[i] + 5, y + 6, { width: colW[i] - 10 });
     });
-
     y += 20;
 
     doc.fillColor('#000');
 
     if (record.LabRequests?.length > 0) {
-      record.LabRequests.forEach((lab) => {
-        const row = [
-          lab.type || '',
-          formatDate(lab.createdAt),
-          lab.LabResult?.result || 'Pendiente'
-        ];
+      record.LabRequests.forEach((lab, rowIdx) => {
+        const tipo      = lab.type || '';
+        const fecha     = formatDate(lab.createdAt);
+        // ── FIX PRINCIPAL: parsear el result ──
+        const resultado = parseResult(lab.LabResult?.result);
 
-        row.forEach((cell, i) => {
-          doc
-            .rect(colX[i], y, colW[i], 20)
-            .stroke('#e5e7eb');
+        const cells = [tipo, fecha, resultado];
 
+        // Calcular altura de fila según el texto más alto (col Resultado suele ser la más larga)
+        const rowHeight = cells.reduce((maxH, text, i) => {
+          const h = doc.heightOfString(text, { width: colW[i] - 10, fontSize: 9 });
+          return Math.max(maxH, h + ROW_PAD * 2);
+        }, 20);
+
+        // Fondo alternado
+        const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+        // Dibujar celdas
+        cells.forEach((text, i) => {
+          // Fondo + borde
+          doc.rect(colX[i], y, colW[i], rowHeight).fill(rowBg).stroke('#e5e7eb');
+
+          // Texto con wrap correcto
           doc
+            .font(i === 0 ? 'Helvetica-Bold' : 'Helvetica')
             .fontSize(9)
-            .text(cell, colX[i] + 5, y + 6, {
-              width: colW[i] - 10
+            .fillColor('#1a1a18')
+            .text(text, colX[i] + 5, y + ROW_PAD, {
+              width: colW[i] - 10,
+              lineBreak: true,
             });
         });
 
-        y += 20;
+        y += rowHeight;
       });
     } else {
-      doc
-        .rect(40, y, 515, 20)
-        .stroke('#e5e7eb');
-
-      doc.text('Sin resultados registrados', 45, y + 6);
+      doc.rect(40, y, 515, 20).stroke('#e5e7eb');
+      doc.font('Helvetica').fontSize(9).fillColor('#888').text('Sin resultados registrados', 45, y + 6);
+      y += 20;
     }
 
     doc.end();
