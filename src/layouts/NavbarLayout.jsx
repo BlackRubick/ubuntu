@@ -1,4 +1,4 @@
-import react from 'react';
+import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 const NavbarLayout = () => {
